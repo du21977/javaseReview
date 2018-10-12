@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 /**
- * 第一个程序
+ * 第一个程序-------基础入门
  * 两个快捷键--psvm和sout分别是public static void main和 System.out.println的快捷键
  */
 public class Day1_1 {
@@ -83,10 +83,22 @@ public class Day1_1 {
         //引用类型的判断
         String s1 = "hello";
         String s2 = "hello";
+
         if(s1==s2){  //==判断是否指向同一个对象
             System.out.println("指向同一个对象"); //会输出
         }
         if(s1.equals(s2)){  //equals判断内容是否相等
+            System.out.println("内容一样"); //也会输出
+        }
+
+        //引用类型的判断
+        String s11 = new String("hello");
+//        String s2 = "hello";
+        String s22 = new String("hello");
+        if(s11==s22){  //==判断是否指向同一个对象
+            System.out.println("指向同一个对象"); //不会输出
+        }
+        if(s11.equals(s22)){  //equals判断内容是否相等
             System.out.println("内容一样"); //也会输出
         }
 
