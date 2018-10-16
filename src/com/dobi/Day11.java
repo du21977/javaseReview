@@ -2,14 +2,17 @@ package com.dobi;
 
 
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
+import java.rmi.server.ExportException;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.*;
 
@@ -235,7 +238,7 @@ public class Day11 {
         }
 
         System.out.println("END");
-*/
+
 
 /////////////////////////////////////////////Concurrent集合///////////////////////////////////////////////////////////////////////////
 
@@ -275,14 +278,60 @@ public class Day11 {
         //例子
         AtomicCounter atomicCounter = new AtomicCounter();
 
+
+
    ////////////////////////////////////////////////ExecutorService///////////////////////////////////////////////////////////////////////////////
+    //线程池操作
+    //  ExecutorService实现了线程池的功能
+    //线程池内部维护了一组线程，可以高效执行大量小任务
+    //必须调用shutdown()来关闭ExecutorService
 
+        //固定任务
+        //ExecutorService executorService = Executors.newFixedThreadPool(3);
+        //单个任务
+        //ExecutorService executorService = Executors.newSingleThreadExecutor();
+        //动态创建任务数量
+        //ExecutorService executorService = Executors.newCachedThreadPool();
+        //创建有上限的任务线程池-----上面newCachedThreadPool其实就调用了这个方法
+        ExecutorService executorService =new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+                60L, TimeUnit.SECONDS,
+                new SynchronousQueue<Runnable>());
+        executorService.submit(new PrintTask("du--"));
+        executorService.submit(new PrintTask("ducheng--"));
+        executorService.submit(new PrintTask("duchengwen--"));
+        executorService.submit(new PrintTask("duchengwen--hesli"));
+        try {
+            Thread.sleep(10000);
+            executorService.shutdown();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
+        //可以定期调度多个任务
+        ScheduledExecutorService executorService1 = Executors.newScheduledThreadPool(3);
+        executorService1.scheduleAtFixedRate(new PrintTask("haha"),2,5,TimeUnit.SECONDS);
 
+*/
 
+ ///////////////////////////////////////////////Future////////////////////////////////////////////////////////////////////
 
+        //EexcutorService接口表示线程池，返回结果不方便，因此出现了Callable<T>接口
 
+        //需要返回结果的时候用Callable
+        //不需要返回结果的时候用Runnable
 
+        ExecutorService executorService = Executors.newFixedThreadPool(3);
+        DownloadTask downloadTask = new DownloadTask("http://www.baidu.com");
+        Future<String> future = executorService.submit(downloadTask);
+        try {
+            String html = future.get();
+            System.out.println(html);
+            executorService.shutdown();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -602,4 +651,63 @@ class AtomicCounter {
         return this.value.get();
     }
 
+}
+
+
+////////////////////////////////////////////////ExecutorService///////////////////////////////////////////////////////////
+/**
+ *线程池操作
+ */
+class PrintTask implements Runnable{
+
+    String name;
+    public PrintTask(String name ){
+        this.name = name;
+    }
+
+    @Override
+    public void run() {
+        for(int i = 0;i<3;i++){
+            System.out.println("Hello--"+name+"!");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+
+
+//////////////////////////////////////////////////////Future//////////////////////////////////////////////////////////////////
+/**
+ * 有返回结果的线程池
+ */
+class DownloadTask implements Callable<String>{
+
+    String url;
+
+    public DownloadTask(String url){
+        this.url = url;
+    }
+
+
+    @Override
+    public String call() throws Exception {
+        System.out.println("Start down"+ url + "....");
+        URLConnection connection = new URL(this.url).openConnection();
+        connection.connect();
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String s = null;
+            StringBuilder sb = new StringBuilder();
+            while((s = reader.readLine())!=null){
+                sb.append(s).append("\n");
+            }
+            return sb.toString();
+        }catch (Exception e){
+
+        }
+        return "-1";
+    }
 }
