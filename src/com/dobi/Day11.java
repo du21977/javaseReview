@@ -4,6 +4,11 @@ package com.dobi;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * 多线程
@@ -98,7 +103,7 @@ public class Day11 {
         System.out.println(count);
 
         //StringBffer是线程安全的，因为他里面的方法都加了synchronized
-*/
+
         ////////////////////////////////////////死锁问题///////////////////////////////////////////////////////////////////
         //死锁：不同线程获取多个不同对象的锁可能导致死锁
         //死锁形成的条件
@@ -123,7 +128,93 @@ public class Day11 {
         }
 
         System.out.println("END");
+
+
+
+        //wait/notify机制
+        //一般在synchronized内使用，因为wait会释放锁
+        //生产者消费者模式
+        //lockobj.wait();-----lockobj.notifyAll()
+
+     /////////////////////////////////////////////同步高级//////////////////////////////////////////////////////////////////
+
+ /////////////////////////////////////////////ReentrantLock//////////////////////////////////////////////////////////////////
+        //为什么需要线程同步，就是怕多个线程同时访问共享资源，造成冲突，解决办法就是，一个一个来访问，就是加锁
+        //synchronized会造成死锁，ReentranLock不会死锁，因为有tryLock获取锁超时会抛异常
+        //ReentrantLock可以替代synchronized,
+        //ReentrantLock获取锁更安全
+        //必须使用try...finnaly保证正确获取和释放锁
+        Counter counter = new Counter();
+        Thread t1 = new Thread(){
+            @Override
+            public void run() {
+                for(int i=0;i<1000;i++){
+                    counter.add(1);
+                }
+            }
+        };
+
+        Thread t2 = new Thread(){
+            @Override
+            public void run() {
+                for(int i=0;i<1000;i++){
+                    counter.dec(1);
+                }
+            }
+        };
+        t1.start();
+        t2.start();
+        try {
+            t1.join();
+            t2.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println(counter.get());
+
+
+        /////////////////////////////////////////ReadWriteLock/////////////////////////////////////////////////////////////////
+        //使用ReadWriteLock可以解决
+        //只允许一个线程写入（其他线程不能写入也不能读取）
+        //没有写入操作时，多个线程允许同时读，以提高性能，如上面的counter.get()
+        //ReadWriteLock:适用条件--同一个实例，大量线程读取，仅有少线程修改---即读多写少的场景
+        Counter1 counter1 = new Counter1();
+        Thread t11 = new Thread(){
+            @Override
+            public void run() {
+                for(int i=0;i<1000;i++){
+                    counter1.add(1);
+                }
+            }
+        };
+
+        Thread t21 = new Thread(){
+            @Override
+            public void run() {
+                for(int i=0;i<1000;i++){
+                    counter1.dec(1);
+                }
+            }
+        };
+        t11.start();
+        t21.start();
+        try {
+            t11.join();
+            t21.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println(counter1.get());
+ */
+
+        /////////////////////////////////////////Condition////////////////////////////////////////////////////////////////
+
+        //Condition:
+
     }
+
+
 
 
 }
@@ -253,6 +344,91 @@ class BThread extends Thread{
     public void run() {
         for(int i=0;i<Day11.LOOP;i++){
             Day11.deadLockObject.b2a(1);
+        }
+    }
+}
+
+/**
+ *  ReentranLock
+ */
+class Counter{
+    private Lock lock = new ReentrantLock();
+    private int value = 0;
+    public void add(int m){
+        lock.lock();
+        try{
+            this.value +=m;
+        }finally {
+            lock.unlock();
+        }
+    }
+
+    public void dec(int m){
+        lock.lock();
+        try{
+            this.value -=m;
+        }finally {
+            lock.unlock();
+        }
+    }
+
+    //获取锁超时会报异常，所以不会造成死锁
+    public int get(){
+        /*
+        lock.lock();
+        try {
+            return this.value;
+        }finally {
+            lock.unlock();
+        }*/
+        try {
+            if(lock.tryLock(1, TimeUnit.SECONDS)){
+                try {
+                    return this.value;
+                }finally {
+                    lock.unlock();
+                }
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+}
+
+
+/**
+ * ReadWriteLock-----提高ReentrantLock性能
+ */
+class Counter1{
+    ReadWriteLock lock = new ReentrantReadWriteLock();
+    Lock rLock = lock.readLock();
+    Lock wLock = lock.writeLock();
+    private int value = 0;
+    public void add(int m){
+        wLock.lock();
+        try {
+            this.value +=m;
+        }finally {
+            wLock.unlock();
+        }
+    }
+
+    public void dec(int m){
+        wLock.lock();
+        try {
+            this.value -=m;
+        }finally {
+            wLock.unlock();
+        }
+    }
+
+    public int get(){
+        rLock.lock();
+        try{
+            return this.value;
+        }finally {
+            rLock.unlock();
         }
     }
 }
