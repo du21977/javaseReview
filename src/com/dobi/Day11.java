@@ -4,11 +4,14 @@ package com.dobi;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.*;
 
 /**
  * 多线程
@@ -206,11 +209,80 @@ public class Day11 {
             e.printStackTrace();
         }
         System.out.println(counter1.get());
- */
+
 
         /////////////////////////////////////////Condition////////////////////////////////////////////////////////////////
 
-        //Condition:
+        //Condition: 用于解决 RenentrantLock中的wait,notify问题
+        //Condition可以替代wait/notify/notifyAll
+        //Condition对象必须从ReentantLock对象获取
+        //ReentrantLock+Condition 可以替代 synchronized +wait/notify/notifyAll
+        TaskQueue taskQueue = new TaskQueue();
+        WorkThread workThread = new WorkThread(taskQueue);
+        workThread.start();
+
+        try {
+            taskQueue.addTask("杜du");
+            Thread.sleep(1000);
+            taskQueue.addTask("he su li");
+            Thread.sleep(1000);
+            taskQueue.addTask("haha");
+            Thread.sleep(1000);
+            workThread.interrupt();
+            workThread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("END");
+*/
+
+/////////////////////////////////////////////Concurrent集合///////////////////////////////////////////////////////////////////////////
+
+        //Concurrent中的BlockingQueue阻塞队列(队列为空时，会wait,当队列满了之后也会wait)，不用自己写阻塞队列了,大大提高开发效率
+        //BlockingDeque是双向队列
+
+        BlockingQueue<String> taskQueue = new ArrayBlockingQueue<String>(1000);
+        ConcurrentWorkThread concurrentWorkThread = new ConcurrentWorkThread(taskQueue);
+        concurrentWorkThread.start();
+
+        try {
+            taskQueue.add("ddd---");
+            Thread.sleep(2000);
+            taskQueue.add("小非---");
+            Thread.sleep(2000);
+            taskQueue.add("和苏---");
+            Thread.sleep(2000);
+            concurrentWorkThread.interrupt();
+            concurrentWorkThread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("END--");
+
+        //Concurrent同步集合总结
+        //List ----------ArrayList ----------------------------------CopyOnWriteArrayList
+        //Map ----------HashMap ----------------------------------ConcurrentHashMap
+        //Set ----------HashSet  TreeSet---------------------------CopyOnWriteArraySet
+        //Queue--------ArrayDeque LinkList-----------------------ArrayBlockingQueue  LinkedBlockingQueue
+        //Deque--------ArrayDeque LinkList----------------------- LinkedBlockingDeque
+
+
+     //////////////////////////////////////////////Atomic///////////////////////////////////////////////////////////////////////
+        //AtomicInterger/AtomicLong等
+        //原子操作实现了无锁的线程安全
+        //适用于计数器、累加器
+        //例子
+        AtomicCounter atomicCounter = new AtomicCounter();
+
+   ////////////////////////////////////////////////ExecutorService///////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
 
     }
 
@@ -257,7 +329,9 @@ class MyThreadRunnable implements  Runnable{
     }
 }
 
-
+/**
+ * 守护线程用的
+ */
 class TimerThread extends Thread{
     @Override
     public void run() {
@@ -347,7 +421,7 @@ class BThread extends Thread{
         }
     }
 }
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  *  ReentranLock
  */
@@ -396,7 +470,7 @@ class Counter{
     }
 }
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * ReadWriteLock-----提高ReentrantLock性能
  */
@@ -431,4 +505,101 @@ class Counter1{
             rLock.unlock();
         }
     }
+}
+
+/////////////////////////////////////////////////Condition///////////////////////////////////////////////////////////
+/**
+ * Condition 用于解决 RenentrantLock中的wait,notify问题
+ *
+ **/
+class TaskQueue{
+    final Queue<String> queue = new LinkedList<>();
+    final Lock lock = new ReentrantLock();
+    final Condition condition = lock.newCondition();
+
+    public String getTask() throws InterruptedException {
+        lock.lock();
+        try{
+            while (this.queue.isEmpty()){
+                condition.await();//停在这里啦，后面不执行啦
+                System.out.println("为空啦");
+            }
+            return queue.remove();
+        }finally {
+            lock.unlock();
+        }
+    }
+
+    public void addTask(String name){
+        lock.lock();
+        try {
+            this.queue.add(name);
+            condition.signalAll();
+        }finally {
+            lock.unlock();
+        }
+    }
+}
+
+class WorkThread extends Thread{
+    TaskQueue taskQueue;
+
+    public WorkThread(TaskQueue taskQueue){
+        this.taskQueue = taskQueue;
+    }
+
+    @Override
+    public void run() {
+        while (!isInterrupted()){
+            String name;
+            try {
+                name = taskQueue.getTask();
+            } catch (InterruptedException e) {
+                break;
+            }
+            System.out.println("Hello,--"+name);
+        }
+    }
+}
+/////////////////////////////////////////////////concurrent集合///////////////////////////////////////////////////////////
+/**
+ *  Concurrent中的BlockingQueue阻塞队列，不用自己写上面的阻塞队列了
+ */
+class ConcurrentWorkThread extends Thread{
+    BlockingQueue<String> taskQueue;
+    public ConcurrentWorkThread(BlockingQueue<String> taskQueue){
+        this.taskQueue = taskQueue;
+    }
+
+    @Override
+    public void run() {
+        while (!isInterrupted()){
+            String name;
+            try {
+                name = taskQueue.take();
+            } catch (InterruptedException e) {
+                break;
+            }
+            System.out.println("Hello,--"+name);
+        }
+    }
+}
+
+////////////////////////////////////////////////Atomic原子操作////////////////////////////////////////////////////
+
+class AtomicCounter {
+
+    private AtomicInteger value = new AtomicInteger();
+    public int add(int m){
+        return this.value.addAndGet(m);
+    }
+
+    public int dec(int m){
+        return this.value.addAndGet(-m);
+    }
+
+    public int get(){
+        return this.value.get();
+    }
+
 }
