@@ -2,8 +2,6 @@ package com.dobi.day2_Arrays;
 
 import com.dobi.day2_Arrays.bean.Student;
 
-import java.util.ArrayList;
-
 /**
  * 基于java中的数组，二次封装属于我们的数组
  * 动态数组---有增删改查的功能
@@ -14,8 +12,9 @@ import java.util.ArrayList;
  *
  * 2-5数组中的包含，搜索和删除元素
  * 2-6使用泛型
+ * 2-7动态数组----数组可以动态扩容-----java中ArrayList是扩容1.5倍
  */
-public class Day2_6 {
+public class Day2_7 {
 
     public static void main(String[] args) {
 
@@ -25,35 +24,21 @@ public class Day2_6 {
         //每个基本类型对应相应的包装类
 
         Array<Integer> array = new Array<>();
-        array.addLast(0);
-        array.addLast(1);
-        System.out.println(array.toString());
-        System.out.println(array);
 
-        array.addFirst(99);
-        System.out.println(array);
 
-        array.add(2,66);
-        System.out.println(array);
-
-        array.contains(66);
-
-        array.remove(0);
-        System.out.println(array);
-
-        array.removeFirst();
-        System.out.println(array);
-
-        array.removeLast();
-        System.out.println(array);
-
-        array.removeElement(66);
-        System.out.println(array);
-
-        Array<Student> studentArray = new Array<>();
-        studentArray.addLast(new Student("du",55));
-        studentArray.addLast(new Student("ducheng",99));
+        //动态扩容测试----增加扩容，减少元素缩容
+        Student student1 = new  Student("du",55);
+        Student student2 = new Student("ducheng",99);
+        Student student3 = new Student("duchengwen",89);
+        Array<Student> studentArray = new Array<>(2);
+        studentArray.addLast(student1);
         System.out.println(studentArray);
+        studentArray.addLast(student2);
+        System.out.println(studentArray);
+        studentArray.addLast(student3);
+        System.out.println(studentArray); //扩容到4个
+        studentArray.removeLast();
+        System.out.println(studentArray); //缩容到2个了
 
     }
 
@@ -116,13 +101,18 @@ public class Day2_6 {
 
         //向数组指定的位置插入一个元素，第index个元素
         public void  add(int index,E e){
-            if(size == data.length){
-                throw new IllegalArgumentException("AddLast failed. Array is full");
-            }
 
             if(index<0 ||index >size){
                 throw new IllegalArgumentException("Add failed. Required index >=0 and index <=size");
             }
+
+            if(size == data.length){
+                //不抛异常了
+//                throw new IllegalArgumentException("AddLast failed. Array is full");
+                //数组满了之后，扩容
+                resize(2*data.length);
+            }
+
 
             for (int i = size-1;i>=index;i--){
                 data[i+1] = data[i] ;
@@ -181,6 +171,11 @@ public class Day2_6 {
             }
             size--;
             data[size]=null;  //防止内存泄漏
+
+            //当数组减小到一半时，我们来缩容
+            if(size == data.length/2&& data.length/2 !=0){
+                resize(data.length/2);
+            }
             return ret;
         }
 
@@ -216,6 +211,23 @@ public class Day2_6 {
             }
             res.append(']');
             return res.toString();
+        }
+
+        /**
+         * 扩容方法
+         * @param newCapacity
+         */
+        private  void  resize(int newCapacity){
+            //不支持new泛型对象，所以得强制转换
+            E[] newData = (E[]) new Object[newCapacity];
+
+            //原数组中的元素要复制给扩容的数组
+            for (int i =0;i<size;i++){
+                newData[i] = data[i];
+            }
+            //原来数组指向新数组的引用
+            data = newData;
+
         }
 
 
