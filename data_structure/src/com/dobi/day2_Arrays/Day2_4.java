@@ -13,13 +13,23 @@ public class Day2_4 {
     public static void main(String[] args) {
 
         //数组的优点：快速查询
+        Array array = new Array();
+        array.addLast(0);
+        array.addLast(1);
+        System.out.println(array.toString());
+        System.out.println(array);
 
+        array.addFirst(99);
+        System.out.println(array);
+
+        array.add(2,66);
+        System.out.println(array);
     }
 
 
 
 
-    class Array{
+    static class Array{
 
         private  int[] data;
         private int size;  //数组中元素的个数
@@ -87,6 +97,38 @@ public class Day2_4 {
             data[index] = e;
             size++;
 
+        }
+
+        //获取index索引位置
+        public int get(int index){
+            if(index<0 ||index >=size){
+                throw new IllegalArgumentException("Get failed. Index is illegal");
+            }
+            return data[index];
+        }
+
+        //修改指定位置的元素
+        public void set(int index ,int e){
+            if(index<0 ||index >=size){
+                throw new IllegalArgumentException("Get failed. Index is illegal");
+            }
+            data[index] = e;
+        }
+
+        @Override
+        public String toString() {
+
+            StringBuilder res = new StringBuilder();
+            res.append(String.format("数组元素个数size = %d, 数组容量capacity = %d\n",size,data.length));
+            res.append('[');
+            for (int i =0;i<size;i++){
+                res.append(data[i]);
+                if(i != size-1){
+                    res.append(", ");
+                }
+            }
+            res.append(']');
+            return res.toString();
         }
 
 
