@@ -1,9 +1,10 @@
 package com.dobi.day4_Linked_List;
 
 /**
- * 在链表中添加元素
+ * 为链表头设立虚拟头节点，称作dummyHead
+ * 为了在添加节点时，不对头节点做特殊处理
  */
-public class Day4_2 {
+public class Day4_3 {
 
     public static void main(String[] args) {
 
@@ -47,10 +48,10 @@ public class Day4_2 {
             }
         }
 
-        private Node head;
+        private Node dummyHead; //虚拟头节点
         int size;
         public LinkedList(){
-            head = null;
+            dummyHead = new Node(null,null);  //即使是空链表，也有一个节点，即虚拟头节点
             size = 0;
         }
 
@@ -66,11 +67,13 @@ public class Day4_2 {
 
         //在链表头添加新的元素
         public  void addFirst(E e){
-            Node node = new Node(e);
-            node.next = head;
-            head = node;
-            //head = new Node(e,head); //这句话代表了上面三句话
-            size++;
+//            Node node = new Node(e);
+//            node.next = head;
+//            head = node;
+//            //head = new Node(e,head); //这句话代表了上面三句话
+//            size++;
+
+            add(0,e);
         }
 
         //在链表的index(包含0)位置添加新的元素e
@@ -80,12 +83,10 @@ public class Day4_2 {
                 throw new IllegalArgumentException("add failed .. Illegal index");
             }
 
-            if(index ==0){
-                addFirst(e);
-            }else {
+
                 //找到要插入元素的前一个节点
-                Node prev = head;
-                for (int i = 0 ;i<index-1;i++){
+                Node prev = dummyHead;
+                for (int i = 0 ;i<index;i++){
                     prev = prev.next;
                 }
                 //要插入的节点
@@ -95,7 +96,7 @@ public class Day4_2 {
                // prev.next = new Node(e,prev.next);//相当于上面三行代码
                 size++;
 
-            }
+
         }
 
         //在链表末尾添加新的元素e
